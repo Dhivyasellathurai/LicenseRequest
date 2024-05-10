@@ -1,9 +1,8 @@
 package com.example.demo.service;
 
-import java.security.NoSuchAlgorithmException;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Optional;
-
-import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -11,8 +10,11 @@ import org.springframework.stereotype.Service;
 import com.example.demo.dto.DecryptDataDto;
 import com.example.demo.dto.EncryptDataDto;
 import com.example.demo.entity.LicenseRequest;
+import com.example.demo.entity.Status;
 import com.example.demo.repository.LicenseRequestRepo;
 import com.example.demo.security.EncryptionUtill;
+import com.example.demo.security.InvalidDataException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class LicenseRequestService {
@@ -37,26 +39,58 @@ public class LicenseRequestService {
 
 	}
 
-	public Object getEncryptData(String companyName) throws NoSuchAlgorithmException {
-		SecretKey key = EncryptionUtill.generateSecretKey();
+	public Object getEncryptData(String companyName) throws Exception {
 		Optional<LicenseRequest> optional = licenseRequestRepo.findByCompanyName(companyName);
 		if (optional.isPresent()) {
 			LicenseRequest request = optional.get();
 			EncryptDataDto dataDto = EncryptDataDto.builder().email(request.getEmail())
 					.licenseKey(request.getLicenseKey()).build();
-			String encryptedData = EncryptionUtill.encrypt(dataDto);
-			DecryptDataDto dataDto2 = new DecryptDataDto();
-			dataDto2.setEncryptedData(encryptedData);
-			dataDto2.setSecretKey(EncryptionUtill.secretKeyToString(key));
-			return dataDto2;
-
+			Object encryptedData = EncryptionUtill.encrypt(dataDto);
+			return encryptedData;
 		} else {
 			return "Company Not found";
 		}
 	}
 
-	public EncryptDataDto getDecryptData(DecryptDataDto dataDto) throws NoSuchAlgorithmException {
-		EncryptDataDto decryptData = EncryptionUtill.decrypt(dataDto);
-		return decryptData;
+	public EncryptDataDto getDecryptData(DecryptDataDto dataDto) throws Exception {
+		try {
+			Object decryptData = EncryptionUtill.decrypt(dataDto);
+
+			if (decryptData instanceof EncryptDataDto) {
+				return (EncryptDataDto) decryptData;
+			} else {
+				throw new InvalidDataException("Decrypted data is not of type EncryptDataDto");
+			}
+		} catch (EncryptionException ex) {
+
+			throw new InvalidDataException("Error decrypting data", ex);
+		} catch (ClassCastException ex) {
+			throw new InvalidDataException("Error casting decrypted data", ex);
+		}
+	}
+
+	public static EncryptDataDto mapResponseToDto(String jsonResponse) {
+		ObjectMapper objectMapper = new ObjectMapper();
+		try {
+			return objectMapper.readValue(jsonResponse, EncryptDataDto.class);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	public void validateLicense(String licenseKey) {
+		Optional<LicenseRequest> optional = licenseRequestRepo.findByLicense(licenseKey);
+		if (optional.isPresent()) {
+			LicenseRequest licenseRequest = optional.get();
+			licenseRequest.setStatus(Status.APPROVED);
+			licenseRequest.setActivationDate(new Date());
+			Calendar calendar = Calendar.getInstance();
+			calendar.setTime(licenseRequest.getActivationDate());
+			calendar.add(Calendar.YEAR, 1);
+			Date expiryDate = calendar.getTime();
+			licenseRequest.setExpiryDate(expiryDate);
+			licenseRequestRepo.save(licenseRequest);
+		}
 	}
 }

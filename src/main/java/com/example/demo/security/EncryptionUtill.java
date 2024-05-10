@@ -3,27 +3,34 @@ package com.example.demo.security;
 import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.spec.KeySpec;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.SerializationUtils;
 
 import com.example.demo.dto.DecryptDataDto;
-import com.example.demo.dto.EncryptDataDto;
+import com.example.demo.service.EncryptionException;
 
 public class EncryptionUtill {
 
+	private static final String SECRET_KEY = "Ebrain2024";
+	private static final String SALT = "license";
+	private static final int KEY_LENGTH = 256;
+	private static final int ITERATION_COUNT = 10000;
 	private static String algo = "AES";
 
-	public static SecretKey generateSecretKey() throws NoSuchAlgorithmException {
-		KeyGenerator keyGenerator = KeyGenerator.getInstance(algo);
-		SecretKey secretKey = keyGenerator.generateKey();
-		return secretKey;
+	public static SecretKey generateSecretKey() throws Exception {
+		SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+		KeySpec spec = new PBEKeySpec(SECRET_KEY.toCharArray(), SALT.getBytes(), ITERATION_COUNT, KEY_LENGTH);
+		SecretKey tmp = factory.generateSecret(spec);
+		return new SecretKeySpec(tmp.getEncoded(), algo);
 	}
 
 	public static String secretKeyToString(SecretKey secretKey) {
@@ -37,26 +44,21 @@ public class EncryptionUtill {
 		return secretKey;
 	}
 
-	public static String encrypt(Object data) {
+	public static Object encrypt(Object data) throws Exception {
+		SecretKey key = generateSecretKey();
 		try {
 			byte[] byteData = SerializationUtils.serialize((Serializable) data);
 			Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-			cipher.init(Cipher.ENCRYPT_MODE, generateSecretKey());
+			cipher.init(Cipher.ENCRYPT_MODE, key);
 			byte[] encryptedData = cipher.doFinal(byteData);
-			return Base64.getEncoder().encodeToString(encryptedData);
+			String encryptedData1 = Base64.getEncoder().encodeToString(encryptedData);
+			DecryptDataDto dataDto = DecryptDataDto.builder().encryptedData(encryptedData1)
+					.secretKey(secretKeyToString(key)).build();
+			return dataDto;
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
 		}
-	}
-
-	public static String encrypt(String plainText) throws Exception {
-		String key = secretKeyToString(generateSecretKey());
-		Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-		SecretKeySpec secretKeySpec = new SecretKeySpec(key.getBytes(), algo);
-		cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
-		byte[] encryptedBytes = cipher.doFinal(plainText.getBytes());
-		return Base64.getEncoder().encodeToString(encryptedBytes);
 	}
 
 	public static String hashString(String input) {
@@ -70,18 +72,26 @@ public class EncryptionUtill {
 		}
 	}
 
-	public static EncryptDataDto decrypt(DecryptDataDto dataDto) {
-		SecretKey key = stringToSecretKey(dataDto.getSecretKey());
+	public static Object decrypt(Object encryptedDataDto) throws Exception {
 		try {
-			Cipher cipher = Cipher.getInstance("AES");
+			if (!(encryptedDataDto instanceof DecryptDataDto)) {
+				throw new IllegalArgumentException("Invalid encrypted data format");
+			}
+			DecryptDataDto dataDto = (DecryptDataDto) encryptedDataDto;
+			SecretKey key = stringToSecretKey(dataDto.getSecretKey());
+			String encryptedData1 = dataDto.getEncryptedData();
+			byte[] encryptedData = Base64.getDecoder().decode(encryptedData1);
+			Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
 			cipher.init(Cipher.DECRYPT_MODE, key);
-			byte[] decryptedData = cipher.doFinal(dataDto.getEncryptedData().getBytes());
-            String decryptedString = new String(decryptedData);
-            return new EncryptDataDto(decryptedString, decryptedString);
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
+			byte[] decryptedData = cipher.doFinal(encryptedData);
+			Object data = SerializationUtils.deserialize(decryptedData);
+			return data;
+		} catch (IllegalArgumentException ex) {
+
+			throw new InvalidDataException("Error decrypting data", ex);
+		} catch (Exception ex) {
+			throw new EncryptionException("Error decrypting data", ex);
 		}
 	}
+
 }

@@ -13,8 +13,6 @@ import com.example.demo.entity.LicenseRequest;
 import com.example.demo.entity.Status;
 import com.example.demo.repository.LicenseRequestRepo;
 import com.example.demo.security.EncryptionUtill;
-import com.example.demo.security.InvalidDataException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class LicenseRequestService {
@@ -45,7 +43,7 @@ public class LicenseRequestService {
 			LicenseRequest request = optional.get();
 			EncryptDataDto dataDto = EncryptDataDto.builder().email(request.getEmail())
 					.licenseKey(request.getLicenseKey()).build();
-			Object encryptedData = EncryptionUtill.encrypt(dataDto);
+			DecryptDataDto encryptedData = EncryptionUtill.encrypt(dataDto);
 			return encryptedData;
 		} else {
 			return "Company Not found";
@@ -54,33 +52,17 @@ public class LicenseRequestService {
 
 	public EncryptDataDto getDecryptData(DecryptDataDto dataDto) throws Exception {
 		try {
-			Object decryptData = EncryptionUtill.decrypt(dataDto);
+			EncryptDataDto decryptData = EncryptionUtill.decrypt(dataDto);
+			return decryptData;
 
-			if (decryptData instanceof EncryptDataDto) {
-				return (EncryptDataDto) decryptData;
-			} else {
-				throw new InvalidDataException("Decrypted data is not of type EncryptDataDto");
-			}
-		} catch (EncryptionException ex) {
-
-			throw new InvalidDataException("Error decrypting data", ex);
-		} catch (ClassCastException ex) {
-			throw new InvalidDataException("Error casting decrypted data", ex);
-		}
-	}
-
-	public static EncryptDataDto mapResponseToDto(String jsonResponse) {
-		ObjectMapper objectMapper = new ObjectMapper();
-		try {
-			return objectMapper.readValue(jsonResponse, EncryptDataDto.class);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
 		}
 	}
 
-	public void validateLicense(String licenseKey) {
-		Optional<LicenseRequest> optional = licenseRequestRepo.findByLicense(licenseKey);
+	public String validateLicense(String licenseKey) {
+		Optional<LicenseRequest> optional = licenseRequestRepo.findByLicenseKey(licenseKey);
 		if (optional.isPresent()) {
 			LicenseRequest licenseRequest = optional.get();
 			licenseRequest.setStatus(Status.APPROVED);
@@ -91,6 +73,9 @@ public class LicenseRequestService {
 			Date expiryDate = calendar.getTime();
 			licenseRequest.setExpiryDate(expiryDate);
 			licenseRequestRepo.save(licenseRequest);
+			return "license validate successfully and approved";
+		} else {
+			return "License Rejected";
 		}
 	}
 }

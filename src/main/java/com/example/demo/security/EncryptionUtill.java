@@ -1,5 +1,9 @@
 package com.example.demo.security;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -16,7 +20,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.SerializationUtils;
 
 import com.example.demo.dto.DecryptDataDto;
-import com.example.demo.service.EncryptionException;
+import com.example.demo.dto.EncryptDataDto;
 
 public class EncryptionUtill {
 
@@ -38,13 +42,7 @@ public class EncryptionUtill {
 		return Base64.getEncoder().encodeToString(keyBytes);
 	}
 
-	public static SecretKey stringToSecretKey(String secretKeyString) {
-		byte[] keyBytes = Base64.getDecoder().decode(secretKeyString);
-		SecretKey secretKey = new SecretKeySpec(keyBytes, 0, keyBytes.length, "AES");
-		return secretKey;
-	}
-
-	public static Object encrypt(Object data) throws Exception {
+	public static DecryptDataDto encrypt(Object data) throws Exception {
 		SecretKey key = generateSecretKey();
 		try {
 			byte[] byteData = SerializationUtils.serialize((Serializable) data);
@@ -71,27 +69,37 @@ public class EncryptionUtill {
 			return null;
 		}
 	}
+	
 
-	public static Object decrypt(Object encryptedDataDto) throws Exception {
+	public static EncryptDataDto decrypt(DecryptDataDto encryptedData) throws Exception {
+		SecretKey key = stringToSecretKey(encryptedData.getSecretKey());
 		try {
-			if (!(encryptedDataDto instanceof DecryptDataDto)) {
-				throw new IllegalArgumentException("Invalid encrypted data format");
-			}
-			DecryptDataDto dataDto = (DecryptDataDto) encryptedDataDto;
-			SecretKey key = stringToSecretKey(dataDto.getSecretKey());
-			String encryptedData1 = dataDto.getEncryptedData();
-			byte[] encryptedData = Base64.getDecoder().decode(encryptedData1);
 			Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
 			cipher.init(Cipher.DECRYPT_MODE, key);
-			byte[] decryptedData = cipher.doFinal(encryptedData);
-			Object data = SerializationUtils.deserialize(decryptedData);
-			return data;
-		} catch (IllegalArgumentException ex) {
-
-			throw new InvalidDataException("Error decrypting data", ex);
-		} catch (Exception ex) {
-			throw new EncryptionException("Error decrypting data", ex);
+			byte[] decodedData = Base64.getDecoder().decode(encryptedData.getEncryptedData());
+			byte[] decryptedData = cipher.doFinal(decodedData);
+			EncryptDataDto dataDto = deserialize(decryptedData, EncryptDataDto.class);
+			return dataDto;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
 		}
+	}
+
+	private static <T> T deserialize(byte[] bytes, Class<T> clazz) {
+		try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes); ObjectInput in = new ObjectInputStream(bis)) {
+			Object obj = in.readObject();
+			return clazz.cast(obj);
+		} catch (IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	public static SecretKey stringToSecretKey(String secretKeyString) {
+		byte[] keyBytes = Base64.getDecoder().decode(secretKeyString);
+		SecretKey secretKey = new SecretKeySpec(keyBytes, 0, keyBytes.length, "AES");
+		return secretKey;
 	}
 
 }

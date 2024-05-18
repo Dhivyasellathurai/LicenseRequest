@@ -37,7 +37,7 @@ public class LicenseRequestService {
 
 	}
 
-	public Object getEncryptData(String companyName) throws Exception {
+	public DecryptDataDto getEncryptData(String companyName) throws Exception {
 		Optional<LicenseRequest> optional = licenseRequestRepo.findByCompanyName(companyName);
 		if (optional.isPresent()) {
 			LicenseRequest request = optional.get();
@@ -46,7 +46,7 @@ public class LicenseRequestService {
 			DecryptDataDto encryptedData = EncryptionUtill.encrypt(dataDto);
 			return encryptedData;
 		} else {
-			return "Company Not found";
+			return null;
 		}
 	}
 

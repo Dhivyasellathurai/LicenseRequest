@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.dto.DecryptDataDto;
+import com.example.demo.dto.EncryptDataDto;
 import com.example.demo.entity.LicenseRequest;
 import com.example.demo.service.LicenseRequestService;
 
@@ -27,12 +28,12 @@ public class LicenseRequestController {
 	}
 
 	@GetMapping("/generate/{companyName}")
-	public Object generateEncryptedData(@PathVariable("companyName") String companyName) throws Exception {
+	public DecryptDataDto generateEncryptedData(@PathVariable("companyName") String companyName) throws Exception {
 		return requestService.getEncryptData(companyName);
 	}
 
 	@PostMapping("/decrypt")
-	public Object decrypt(@RequestBody DecryptDataDto encrypt) throws Exception {
+	public EncryptDataDto decrypt(@RequestBody DecryptDataDto encrypt) throws Exception {
 		return requestService.getDecryptData(encrypt);
 	}
 

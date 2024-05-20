@@ -8,33 +8,52 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Service;
 
 import com.example.demo.entity.EmailDetails;
-import com.example.demo.repository.EmailService;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
-public class EmailServiceImpl implements EmailService {
+@Service
+public class EmailService {
 
 	@Autowired
 	private JavaMailSender javaMailSender;
 
-	@Value("${spring.mail.username}")
+	@Value("$(spring.mail.username)")
 	private String sender;
 
-	public String sendSimpleMail(EmailDetails details) {
+	public String sendSimpleMail(String recipient, String Body, String Subject) {
 
 		try {
-
 			SimpleMailMessage mailMessage = new SimpleMailMessage();
-
 			mailMessage.setFrom(sender);
-			mailMessage.setTo(details.getRecipient());
-			mailMessage.setText(details.getMsgBody());
-			mailMessage.setSubject(details.getSubject());
+			mailMessage.setTo(recipient);
+			mailMessage.setText(Body);
+			mailMessage.setSubject(Subject);
 
 			javaMailSender.send(mailMessage);
+
+			return "Mail Sent Successfully...";
+		}
+
+		catch (Exception e) {
+			return "Error while Sending Mail";
+		}
+	}
+
+	public String sendSimpleMail(EmailDetails sendDetails) {
+
+		try {
+			SimpleMailMessage mailMessage = new SimpleMailMessage();
+			mailMessage.setFrom(sender);
+			mailMessage.setTo(sendDetails.getRecipient());
+			mailMessage.setText(sendDetails.getMsgBody());
+			mailMessage.setSubject(sendDetails.getSubject());
+
+			javaMailSender.send(mailMessage);
+
 			return "Mail Sent Successfully...";
 		}
 
@@ -61,7 +80,9 @@ public class EmailServiceImpl implements EmailService {
 
 			javaMailSender.send(mimeMessage);
 			return "Mail sent Successfully";
-		} catch (MessagingException e) {
+		}
+
+		catch (MessagingException e) {
 
 			return "Error while sending mail!!!";
 		}

@@ -29,7 +29,8 @@ public class LicenseRequestController {
 
 	@GetMapping("/generate/{companyName}")
 	public DecryptDataDto generateEncryptedData(@PathVariable("companyName") String companyName) throws Exception {
-		return requestService.getEncryptData(companyName);
+		DecryptDataDto dataDto = requestService.getEncryptData(companyName);
+		return dataDto;
 	}
 
 	@PostMapping("/decrypt")

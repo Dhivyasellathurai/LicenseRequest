@@ -10,6 +10,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import com.example.demo.dto.DecryptDataDto;
 import com.example.demo.entity.EmailDetails;
 
 import jakarta.mail.MessagingException;
@@ -20,6 +21,8 @@ public class EmailService {
 
 	@Autowired
 	private JavaMailSender javaMailSender;
+	@Autowired
+	private LicenseRequestService requestService;
 
 	@Value("$(spring.mail.username)")
 	private String sender;
@@ -43,14 +46,18 @@ public class EmailService {
 		}
 	}
 
-	public String sendSimpleMail(EmailDetails sendDetails) {
+	public String sendSimpleMail(String CompanyName, EmailDetails sendDetails) {
 
 		try {
+			DecryptDataDto dataDto = requestService.getEncryptData(CompanyName);
 			SimpleMailMessage mailMessage = new SimpleMailMessage();
 			mailMessage.setFrom(sender);
 			mailMessage.setTo(sendDetails.getRecipient());
-			mailMessage.setText(sendDetails.getMsgBody());
+			mailMessage.setText(
+					"EncryptedData :" + dataDto.getEncryptedData() + ", secret Key :" + dataDto.getSecretKey());
 			mailMessage.setSubject(sendDetails.getSubject());
+			mailMessage.setCc(sendDetails.getCc());
+			mailMessage.setBcc(sendDetails.getBcc());
 
 			javaMailSender.send(mailMessage);
 

@@ -48,4 +48,9 @@ public class LicenseRequestController {
 		}
 	}
 
+	@GetMapping("/validate/expiry/date")
+	public Object validateExpiryDate() {
+		return requestService.validaExpiryDate();
+	}
+
 }

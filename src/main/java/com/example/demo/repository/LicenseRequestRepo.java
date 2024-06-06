@@ -18,4 +18,5 @@ public interface LicenseRequestRepo extends JpaRepository<LicenseRequest, UUID> 
 
 	@Query(value = "select * FROM demo.license_request WHERE license_key=:licenseKey", nativeQuery = true)
 	Optional<LicenseRequest> findByLicenseKey(String licenseKey);
+
 }

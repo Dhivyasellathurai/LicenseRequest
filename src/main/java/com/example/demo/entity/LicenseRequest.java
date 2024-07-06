@@ -31,7 +31,9 @@ public class LicenseRequest {
 
 	private String contactNo;
 
-	private String email;
+	private String commonEmail;
+	
+	private String companyEmail;
 
 	private int gracePeriod;
 

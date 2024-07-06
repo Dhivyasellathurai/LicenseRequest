@@ -1,5 +1,7 @@
 package com.example.demo.controller;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,8 +20,11 @@ public class EmailController {
 	private EmailService emailService;
 
 	@PostMapping("/sendMail")
-	public String sendMail() {
-		String status = emailService.sendSimpleMail("adhanalakshmi230@gmail.com", "Hi dhanam", "This is dhivya");
+	public String sendMail(@RequestBody Map<String, Object> payload) {
+		String[] to = ((String) payload.get("to")).split(",");
+		String subject = (String) payload.get("subject");
+		String text = (String) payload.get("text");
+		String status = emailService.sendSimpleMail(to, subject, text);
 		return status;
 	}
 

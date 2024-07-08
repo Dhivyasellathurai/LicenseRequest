@@ -1,6 +1,6 @@
 package com.example.demo.entity;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import jakarta.persistence.Entity;
@@ -37,7 +37,7 @@ public class LicenseRequest {
 
 	private int gracePeriod;
 
-	private Date expiryDate;
+	private LocalDate expiryDate;
 
 	@Enumerated(EnumType.STRING)
 	private Status status;
@@ -45,7 +45,7 @@ public class LicenseRequest {
 	@Enumerated(EnumType.STRING)
 	private ExpiredStatus expiredStatus;
 
-	private Date activationDate;
+	private LocalDate activationDate;
 
 	private String licenseKey;
 

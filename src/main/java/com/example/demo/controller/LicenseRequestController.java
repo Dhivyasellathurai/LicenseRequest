@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -65,38 +66,35 @@ public class LicenseRequestController {
 
 	@Scheduled(fixedRate = 86400000)
 	public void validateExpiryDate() {
-		Date date = new Date();
+		LocalDate date = LocalDate.now();
 		List<LicenseRequest> expiredRecords = licenseRequestRepo.findAll();
 		List<String> results = new ArrayList<>();
-		String[] mail = { "hariblockdevil2@gmail.com", "harikaranthiyagarajan@gmail.com" };
+
 		for (LicenseRequest request : expiredRecords) {
-			Date expiryDate = request.getExpiryDate();
-			Date gracePeriod = addDays(expiryDate, request.getGracePeriod());
-			if (expiryDate.after(date)) {
+			String[] mail = { request.getCommonEmail(), request.getCompanyEmail() };
+			LocalDate expiryDate = request.getExpiryDate();
+			LocalDate gracePeriod = expiryDate.plusDays(request.getGracePeriod());
+			LocalDate alertDate = expiryDate.minusDays(15);
+			if (expiryDate.isAfter(date) && date.equals(alertDate)) {
 				results.add(request.getCompanyName() + "License is not expired");
 				request.setExpiredStatus(ExpiredStatus.NOT_EXPIRED);
-			} else if (expiryDate.before(date) && gracePeriod.after(date)) {
+				emailService.sendSimpleMail(mail,
+						"Hi, Hari , your company license was expired in 15 days , please renew asap",
+						"License expired soon");
+			} else if (expiryDate.isBefore(date) && gracePeriod.isAfter(date)) {
 				results.add(request.getCompanyName() + "License is expired, It is on the Grace period");
 				request.setExpiredStatus(ExpiredStatus.IN_GRASSPERIOD);
 				emailService.sendSimpleMail(mail,
-						"Hi, Hari , your company license was expiring soon , please renew before the grass period",
+						"Hi, Hari , your company license was expired, and your company is on the notice period, please renew asap",
 						"License expired soon");
 			} else {
-				results.add(request.getCompanyName() + "License Expired and Grace period is also finished");
+				results.add(request.getCompanyName() + " License Expired and Grace period is also finished");
 				request.setExpiredStatus(ExpiredStatus.EXPIRED);
-				emailService.sendSimpleMail(mail,
-						"Hi, Hari , your company license was expired , please renew before the grass period",
-						"License expired ");
+				emailService.sendSimpleMail(mail, "Hi, Hari , your company license was expired ", "License expired ");
 			}
 			licenseRequestRepo.save(request);
 		}
 		System.out.print(results);
 	}
 
-	private Date addDays(Date date, int days) {
-		Calendar calendar = Calendar.getInstance();
-		calendar.setTime(date);
-		calendar.add(Calendar.DAY_OF_YEAR, days);
-		return calendar.getTime();
-	}
 }

@@ -1,7 +1,6 @@
 package com.example.demo.service;
 
-import java.util.Calendar;
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,11 +65,9 @@ public class LicenseRequestService {
 		if (optional.isPresent()) {
 			LicenseRequest licenseRequest = optional.get();
 			licenseRequest.setStatus(Status.APPROVED);
-			licenseRequest.setActivationDate(new Date());
-			Calendar calendar = Calendar.getInstance();
-			calendar.setTime(licenseRequest.getActivationDate());
-			calendar.add(Calendar.YEAR, 1);
-			Date expiryDate = calendar.getTime();
+			LocalDate date = LocalDate.now();
+			licenseRequest.setActivationDate(date);
+			LocalDate expiryDate = date.plusDays(15);
 			licenseRequest.setExpiryDate(expiryDate);
 			licenseRequestRepo.save(licenseRequest);
 			return "license validate successfully and approved";
@@ -79,5 +76,4 @@ public class LicenseRequestService {
 		}
 	}
 
-	
 }

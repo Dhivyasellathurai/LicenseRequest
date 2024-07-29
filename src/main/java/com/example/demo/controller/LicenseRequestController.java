@@ -2,11 +2,10 @@ package com.example.demo.controller;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,6 +26,7 @@ import com.example.demo.service.LicenseRequestService;
 
 @RestController
 @RequestMapping("/api/license")
+//@EnableScheduling
 public class LicenseRequestController {
 
 	@Autowired
@@ -64,7 +64,7 @@ public class LicenseRequestController {
 		}
 	}
 
-	@Scheduled(fixedRate = 86400000)
+//	@Scheduled(fixedRate = 86400000)
 	public void validateExpiryDate() {
 		LocalDate date = LocalDate.now();
 		List<LicenseRequest> expiredRecords = licenseRequestRepo.findAll();

@@ -12,6 +12,8 @@ import com.example.demo.entity.Customer;
 import com.example.demo.repository.CustomerRepo;
 import com.example.demo.security.PasswordEncrypt;
 
+import jakarta.servlet.http.HttpSession;
+
 @Service
 public class CustomerService {
 

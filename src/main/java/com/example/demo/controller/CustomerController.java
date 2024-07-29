@@ -17,18 +17,25 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.demo.entity.Customer;
 import com.example.demo.service.CustomerService;
 
+import jakarta.servlet.http.HttpSession;
+
 @RestController
 public class CustomerController {
 	@Autowired
 	private CustomerService customerService;
 
 	@PostMapping("/create")
-	public void createProduct(@RequestBody Customer request) throws NoSuchAlgorithmException {
+	public void createCustomer(@RequestBody Customer request, HttpSession session) throws NoSuchAlgorithmException {
 		customerService.createCustomer(request);
+		session.setAttribute("customerID", request.getId());
 	}
 
-	@GetMapping("/getById/{id}")
-	public Optional<Customer> getById(@PathVariable("id") UUID id) {
+	@GetMapping("/getById")
+	public Optional<Customer> getById(HttpSession session) {
+		UUID id = (UUID) session.getAttribute("customerID");
+		if (id == null) {
+			return Optional.empty();
+		}
 		return customerService.getById(id);
 	}
 
